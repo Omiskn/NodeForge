@@ -1,121 +1,121 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from 'react'
+import { ReactFlowProvider } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import { useTreeEditor, type TreeEditor } from '@/hooks/useTreeEditor'
+import Toolbar from '@/features/toolbar/Toolbar'
+import LeftSidebar from '@/features/sidebar/LeftSidebar'
+import TreeCanvas from '@/features/canvas/TreeCanvas'
+import PropertiesPanel from '@/features/properties/PropertiesPanel'
+import { Toaster } from '@/components/ui/Toaster'
+import { cn } from '@/lib/utils'
 
-function App() {
-  const [count, setCount] = useState(0)
+function EditorShell() {
+  const editor: TreeEditor = useTreeEditor()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
+
+  /* ---------------- keyboard shortcuts ---------------- */
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement
+      const typing =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+
+      if (event.key === 'Escape') {
+        editor.clearSelection()
+        ;(document.activeElement as HTMLElement | null)?.blur()
+        return
+      }
+      if (typing) return
+
+      const mod = event.ctrlKey || event.metaKey
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault()
+        editor.deleteSelected()
+      } else if (mod && !event.shiftKey && event.key.toLowerCase() === 'z') {
+        event.preventDefault()
+        editor.undo()
+      } else if (
+        (mod && event.shiftKey && event.key.toLowerCase() === 'z') ||
+        (mod && event.key.toLowerCase() === 'y')
+      ) {
+        event.preventDefault()
+        editor.redo()
+      } else if (mod && event.key.toLowerCase() === 'c') {
+        editor.copySelected()
+      } else if (mod && event.key.toLowerCase() === 'v') {
+        event.preventDefault()
+        editor.pasteClipboard()
+      } else if (mod && event.key.toLowerCase() === 'd') {
+        event.preventDefault()
+        editor.duplicateSelected()
+      } else if (mod && event.key.toLowerCase() === 'a') {
+        event.preventDefault()
+        editor.selectAll()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [editor])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+      <Toolbar
+        editor={editor}
+        onOpenSidebar={() => setSidebarOpen(true)}
+        onOpenPanel={() => setPanelOpen(true)}
+      />
+
+      <div className="relative flex min-h-0 flex-1">
+        {/* left sidebar — drawer on small screens */}
+        <div
+          className={cn(
+            'z-40 lg:static lg:z-auto',
+            sidebarOpen
+              ? 'absolute inset-y-0 left-0 shadow-[var(--shadow-lg-soft)]'
+              : 'hidden lg:block',
+          )}
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          <LeftSidebar
+            editor={editor}
+            onClose={sidebarOpen ? () => setSidebarOpen(false) : undefined}
+          />
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {/* main canvas */}
+        <main className="min-w-0 flex-1">
+          <TreeCanvas editor={editor} />
+        </main>
+
+        {/* properties panel — drawer on small screens */}
+        <div
+          className={cn(
+            'z-40 lg:static lg:z-auto',
+            panelOpen
+              ? 'absolute inset-y-0 right-0 shadow-[var(--shadow-lg-soft)]'
+              : 'hidden lg:block',
+          )}
+        >
+          <PropertiesPanel
+            editor={editor}
+            onClose={panelOpen ? () => setPanelOpen(false) : undefined}
+          />
+        </div>
+      </div>
+
+      <Toaster toasts={editor.toasts} />
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <ReactFlowProvider>
+      <EditorShell />
+    </ReactFlowProvider>
   )
 }
 
