@@ -1,8 +1,9 @@
 import type { DragEvent } from 'react'
+import { useState } from 'react'
 import {
   ChevronsDown,
-  ChevronsLeft,
   ChevronsRight,
+  ChevronsUp,
   LayoutTemplate,
   Plus,
   Shapes,
@@ -42,6 +43,8 @@ function LeftSidebar({ editor, onClose }: SidebarProps) {
   const selectedNodes = editor.nodes.filter((n) => n.selected)
   const selectedNode = selectedNodes.length === 1 ? selectedNodes[0] : null
 
+  const [relateAs, setRelateAs] = useState<'child' | 'sibling' | 'parent' | 'unconnected' | null>(null)
+
   function onDragStart(event: DragEvent, shape: string) {
     event.dataTransfer.setData(SHAPE_DRAG_MIME, shape)
     event.dataTransfer.effectAllowed = 'copy'
@@ -53,6 +56,21 @@ function LeftSidebar({ editor, onClose }: SidebarProps) {
       { shape, title: 'New Node', style: { ...shapePresets[shape] } },
       center,
     )
+  }
+
+  function addRelativeToSelected(shape: (typeof nodeTypeTemplates)[number]['shape']) {
+    if (!selectedNode) return
+    const partial: Parameters<typeof editor.addRelative>[2] = {
+      shape,
+      title: 'New Node',
+      style: { ...shapePresets[shape] },
+    }
+    if (relateAs === 'unconnected') {
+      const center = editor.viewportCenter()
+      editor.addNodeAt(partial, center)
+      return
+    }
+    editor.addRelative(selectedNode.id, relateAs as 'child' | 'sibling' | 'parent', partial)
   }
 
   function loadTemplate(template: TreeTemplate) {
@@ -93,45 +111,54 @@ function LeftSidebar({ editor, onClose }: SidebarProps) {
         <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
           Hierarchy
         </p>
-        <div className="mb-1.5 grid grid-cols-3 gap-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-col gap-0.5 !px-1 py-2 text-[10px]"
-            disabled={!selectedNode}
-            onClick={() => selectedNode && editor.addRelative(selectedNode.id, 'parent')}
-          >
-            <ChevronsLeft size={14} />
-            Parent
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-col gap-0.5 !px-1 py-2 text-[10px] leading-tight"
-            disabled={!selectedNode}
-            onClick={() => selectedNode && editor.addRelative(selectedNode.id, 'child')}
-          >
-            <ChevronsDown size={14} />
-            Child
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-col gap-0.5 !px-1 py-2 text-[10px] leading-tight"
-            disabled={!selectedNode}
-            onClick={() => selectedNode && editor.addRelative(selectedNode.id, 'sibling')}
-          >
-            <ChevronsRight size={14} />
-            Sibling
-          </Button>
-        </div>
-        {!selectedNode ? (
+
+        {selectedNode ? (
+          <>
+            <div className="mb-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-2">
+              <p className="mb-1.5 text-[10px] font-medium text-[var(--muted-foreground)]">
+                Add to “{selectedNode.data.title || 'node'}” as…
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { value: 'child' as const, label: 'Child', icon: ChevronsDown },
+                  { value: 'sibling' as const, label: 'Sibling', icon: ChevronsRight },
+                  { value: 'parent' as const, label: 'Parent', icon: ChevronsUp },
+                  { value: 'unconnected' as const, label: 'Unlinked', icon: Plus },
+                ].map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRelateAs(relateAs === value ? null : value)}
+                    title={`Add a new ${label.toLowerCase()} of the selected node`}
+                    className={cn(
+                      'flex flex-col items-center gap-0.5 rounded-lg border p-1.5 text-[10px] transition-colors',
+                      relateAs === value
+                        ? 'border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]'
+                        : 'border-[var(--border)] bg-transparent text-[var(--foreground)] hover:border-[var(--primary)]',
+                    )}
+                  >
+                    <Icon size={14} />
+                    <span className="leading-tight">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              className="mb-4 w-full text-xs"
+              onClick={() => addRelativeToSelected('rounded')}
+              disabled={relateAs === null}
+            >
+              <Plus size={14} />
+              {relateAs === 'unconnected' ? 'Add Unlinked Node' : relateAs === 'parent' ? 'Add Parent Node' : relateAs === 'sibling' ? 'Add Sibling Node' : 'Add Child Node'}
+            </Button>
+          </>
+        ) : (
           <p className="mb-3 text-[10px] text-[var(--muted-foreground)]">
             Select a node to add a relative, or use the button below for a standalone node.
           </p>
-        ) : (
-          <div className="mb-3" />
         )}
+
         <Button
           variant="outline"
           className="mb-4 w-full text-xs"
