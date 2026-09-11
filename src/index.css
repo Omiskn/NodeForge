@@ -171,3 +171,85 @@ body {
   }
 }
 
+/* Print / PDF: hide editor chrome, show only the diagram + legend. */
+@media print {
+  @page {
+    margin: 0.4in;
+    size: landscape;
+  }
+
+  html, body {
+    background: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  /* Hide the entire editor shell (toolbar, sidebars, panel, toaster). */
+  .editor-shell {
+    display: none !important;
+  }
+
+  /* Reveal a print-only overlay that holds the clean diagram. */
+  .print-only {
+    display: block !important;
+  }
+
+  /* React Flow chrome should never appear in print. */
+  .react-flow__controls,
+  .react-flow__minimap,
+  .react-flow__background,
+  .react-flow__handle,
+  .react-flow__panel,
+  .context-menu,
+  .context-menu-overlay,
+  .toaster,
+  .toast,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Selection outlines, highlight animations, hover states off in print. */
+  .react-flow__node.selected,
+  .node-highlight,
+  .pulse-highlight {
+    outline: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+
+  /* Ensure the diagram container fills the printable area and is fully visible. */
+  .print-diagram {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .print-diagram .react-flow__viewport {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .print-diagram .react-flow__node {
+    overflow: visible !important;
+  }
+
+  /* Nodes: force a print-safe, high-contrast look without losing per-node styling. */
+  .print-diagram .react-flow__node {
+    box-shadow: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Edges: ensure connectors use the muted-foreground color in print. */
+  .print-diagram .react-flow__edge-path {
+    stroke: var(--muted-foreground) !important;
+  }
+}

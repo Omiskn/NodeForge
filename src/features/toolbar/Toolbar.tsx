@@ -3,6 +3,7 @@ import {
   Download,
   FileJson,
   FilePlus2,
+  Printer,
   Image as ImageIcon,
   Layout,
   Maximize,
@@ -131,6 +132,11 @@ function Toolbar({ editor, onOpenSidebar, onOpenPanel }: ToolbarProps) {
     link.click()
     URL.revokeObjectURL(url)
     editor.toast('Exported JSON', 'success')
+  }
+
+  function print() {
+    window.print()
+    editor.toast('Sent to printer / PDF', 'success')
   }
 
   function handleImportFile(file: File) {
@@ -285,6 +291,9 @@ function Toolbar({ editor, onOpenSidebar, onOpenPanel }: ToolbarProps) {
               </MenuItem>
               <MenuItem icon={ImageIcon} onClick={() => { void exportAs('svg'); close() }}>
                 Export SVG
+              </MenuItem>
+              <MenuItem icon={Printer} onClick={() => { print(); close() }}>
+                Print / PDF
               </MenuItem>
             </>
           )}

@@ -16,7 +16,7 @@ import {
   type ContextMenuActions,
   type ContextMenuState,
 } from './ContextMenu'
-import type { TreeEdge, NodeShape } from '@/types'
+import type { TreeEdge, TreeNode, NodeShape } from '@/types'
 
 const nodeTypes = { treeNode: TreeNodeComponent }
 
@@ -141,6 +141,28 @@ function TreeCanvas({ editor }: { editor: TreeEditor }) {
 
   const isEmpty = nodes.length === 0
 
+  const printNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        const { selected: _selected, ...nodeRest } = node
+        const { highlightedAt: _h, ...dataRest } = node.data
+        return {
+          ...nodeRest,
+          data: dataRest as TreeNode['data'],
+        }
+      }),
+    [nodes],
+  )
+
+  const printEdges = useMemo(
+    () =>
+      editor.visibleDoc.visibleEdges.map((edge) => {
+        const { selected: _sel, ...rest } = edge
+        return styledEdge(rest as TreeEdge)
+      }),
+    [editor.visibleDoc.visibleEdges],
+  )
+
   return (
     <div className="relative h-full w-full flex-1">
       <ReactFlow
@@ -185,6 +207,33 @@ function TreeCanvas({ editor }: { editor: TreeEditor }) {
           nodeColor={(node) => (node.selected ? '#10b981' : '#94a3b8')}
         />
       </ReactFlow>
+
+      {/* Print-only overlay: clean diagram (no chrome) for print/PDF. */}
+      <div className="print-only print-diagram absolute inset-0 flex items-center justify-center">
+        {isEmpty ? (
+          <div className="rounded-2xl border border-dashed border-black/20 bg-white px-10 py-8 text-center">
+            <p className="text-sm font-medium">
+              Your canvas is empty
+            </p>
+            <p className="mt-1 text-xs text-black/50">
+              Drag a node shape from the sidebar or pick a ready-made template
+              to get started.
+            </p>
+          </div>
+        ) : (
+          <ReactFlow
+            nodes={printNodes}
+            edges={printEdges}
+            nodeTypes={nodeTypes}
+            fitView
+            fitViewOptions={{ padding: 0.05 }}
+            deleteKeyCode={null}
+            multiSelectionKeyCode={null}
+            selectionKeyCode={null}
+            className="!bg-white !p-6"
+          />
+        )}
+      </div>
 
       {/* Empty state */}
       {isEmpty ? (

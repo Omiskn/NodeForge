@@ -62,7 +62,7 @@ function EditorShell() {
   }, [editor])
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+    <div className="editor-shell flex h-screen w-screen flex-col overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
       <Toolbar
         editor={editor}
         onOpenSidebar={() => setSidebarOpen(true)}
