@@ -50,6 +50,7 @@ export type NodeDataInput = {
   description?: string
   icon?: string
   imageUrl?: string
+  category?: string
   shape?: NodeShape
   collapsed?: boolean
   isGroup?: boolean
@@ -64,6 +65,7 @@ export function makeNodeData(partial: NodeDataInput = {}): NodeData {
     description: partial.description ?? '',
     icon: partial.icon ?? '',
     imageUrl: partial.imageUrl ?? '',
+    category: partial.category ?? '',
     shape: partial.shape ?? 'rounded',
     style: { ...defaultNodeStyle(), ...partial.style },
     collapsed: partial.collapsed ?? false,

@@ -1,11 +1,33 @@
-import { defaultEdgeStyle } from '@/data/edgeStyles'
-import { makeNodeData, defaultNodeStyle } from '@/data/nodeStyles'
-import { rfEdgeType } from '@/hooks/useTreeEditor'
-import type { Project, TreeEdge, TreeNode } from '@/types'
+import { defaultEdgeStyle } from "@/data/edgeStyles";
+import { makeNodeData, defaultNodeStyle } from "@/data/nodeStyles";
+import { rfEdgeType } from "@/hooks/useTreeEditor";
+import type {
+  CanvasSettings,
+  LegendConfig,
+  Project,
+  TreeEdge,
+  TreeNode,
+} from "@/types";
+
+export function defaultCanvasSettings(): CanvasSettings {
+  return {
+    showGrid: true,
+    layoutDirection: "TB",
+    showLegend: false,
+    legendPosition: "bottom-right",
+    focusGroup: null,
+  };
+}
+
+function normalizeSettings(
+  input: Partial<CanvasSettings> | undefined,
+): CanvasSettings {
+  return { ...defaultCanvasSettings(), ...input };
+}
 
 /** Export the project as a pretty-printed JSON string. */
 export function serializeProject(project: Project): string {
-  return JSON.stringify(project, null, 2)
+  return JSON.stringify(project, null, 2);
 }
 
 /**
@@ -15,29 +37,29 @@ export function serializeProject(project: Project): string {
  */
 export function parseImportedProject(raw: string): Project | null {
   try {
-    const data = JSON.parse(raw) as Partial<Project>
-    if (!Array.isArray(data.nodes) || !Array.isArray(data.edges)) return null
+    const data = JSON.parse(raw) as Partial<Project>;
+    if (!Array.isArray(data.nodes) || !Array.isArray(data.edges)) return null;
 
     const nodes: TreeNode[] = data.nodes.map((node) => {
-      const nodeStyle = { ...defaultNodeStyle(), ...node.data?.style }
+      const nodeStyle = { ...defaultNodeStyle(), ...node.data?.style };
       return {
         id: node.id,
-        type: 'treeNode' as const,
+        type: "treeNode" as const,
         position: { x: node.position?.x ?? 0, y: node.position?.y ?? 0 },
         data: makeNodeData({
           ...node.data,
           style: nodeStyle,
-          isGroup: node.data?.isGroup ?? node.data?.shape === 'group',
+          isGroup: node.data?.isGroup ?? node.data?.shape === "group",
         }),
         selected: false,
-      }
-    })
+      };
+    });
 
-    const nodeIds = new Set(nodes.map((n) => n.id))
+    const nodeIds = new Set(nodes.map((n) => n.id));
     const edges: TreeEdge[] = data.edges
       .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
       .map((e) => {
-        const edgeData = { ...defaultEdgeStyle(), ...e.data }
+        const edgeData = { ...defaultEdgeStyle(), ...e.data };
         return {
           id: e.id,
           source: e.source,
@@ -45,20 +67,32 @@ export function parseImportedProject(raw: string): Project | null {
           type: rfEdgeType(edgeData.type),
           data: edgeData,
           selected: false,
-        }
-      })
+        };
+      });
 
     return {
-      name: typeof data.name === 'string' && data.name ? data.name : 'Imported Tree',
+      name:
+        typeof data.name === "string" && data.name
+          ? data.name
+          : "Imported Tree",
       version: 1,
       nodes,
       edges,
-      settings: {
-        showGrid: data.settings?.showGrid ?? true,
-        layoutDirection: data.settings?.layoutDirection ?? 'TB',
-      },
-    }
+      settings: normalizeSettings(data.settings),
+      legend: normalizeLegend(data.legend),
+    };
   } catch {
-    return null
+    return null;
   }
+}
+
+function normalizeLegend(input: LegendConfig | undefined): LegendConfig {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { labels: {} };
+  }
+  const labels: Record<string, string> = {};
+  for (const [key, value] of Object.entries(input.labels ?? {})) {
+    if (typeof value === "string" && value.trim()) labels[key] = value;
+  }
+  return { labels };
 }

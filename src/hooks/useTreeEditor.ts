@@ -8,8 +8,9 @@ import {
   type NodeChange,
 } from '@xyflow/react'
 import { autoLayout } from '@/lib/layout'
+import { canonicalHandles, withCanonicalHandles, wouldCreateCycle } from '@/lib/edgeHandles'
 import { uid } from '@/lib/utils'
-import { defaultEdgeStyle } from '@/data/edgeStyles'
+import { defaultCanvasSettings, defaultEdgeStyle } from '@/data/edgeStyles'
 import { makeNodeData, type NodeDataInput } from '@/data/nodeStyles'
 import { createDemoTree } from '@/data/templates'
 import { useHistory } from '@/hooks/useHistory'
@@ -18,7 +19,6 @@ import type {
   EdgeStyleData,
   LayoutDirection,
   NodeData,
-  NodeShape,
   NodeStyle,
   Project,
   TreeEdge,
@@ -38,6 +38,16 @@ export interface Toast {
 interface Doc {
   nodes: TreeNode[]
   edges: TreeEdge[]
+}
+
+function makeTreeEdge(source: string, target: string): TreeEdge {
+  return withCanonicalHandles({
+    id: uid('e'),
+    source,
+    target,
+    type: 'smoothstep',
+    data: defaultEdgeStyle(),
+  })
 }
 
 /** Map an edge style type to the React Flow edge type name */
@@ -74,7 +84,7 @@ function createInitialProject(): Project {
     version: 1,
     nodes: demo.nodes,
     edges: demo.edges,
-    settings: { showGrid: true, layoutDirection: 'TB' },
+    settings: { ...defaultCanvasSettings() },
   }
 }
 
@@ -240,25 +250,82 @@ export function useTreeEditor() {
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      if (!connection.source || !connection.target) return
       if (connection.source === connection.target) return
       // Tree invariant: each node has at most one parent
       if (edgesRef.current.some((e) => e.target === connection.target)) {
         toast('Each node can have only one parent', 'error')
         return
       }
-      const edge: TreeEdge = {
+      if (
+        wouldCreateCycle(
+          edgesRef.current,
+          connection.source,
+          connection.target,
+        )
+      ) {
+        toast('That connection would create a cycle', 'error')
+        return
+      }
+      const handles = canonicalHandles()
+      const edge: TreeEdge = withCanonicalHandles({
         id: uid('e'),
         source: connection.source,
         target: connection.target,
-        sourceHandle: connection.sourceHandle,
-        targetHandle: connection.targetHandle,
+        sourceHandle: handles.sourceHandle,
+        targetHandle: handles.targetHandle,
         type: 'smoothstep',
         data: defaultEdgeStyle(),
-      }
+      })
       const nextEdges = [...edgesRef.current, edge]
       setEdges(nextEdges)
       commit(nodesRef.current, nextEdges)
       toast('Connected', 'success')
+    },
+    [commit, toast],
+  )
+
+  /**
+   * Drag an existing edge endpoint onto another node:
+   * child keeps at most one parent and cycles are rejected.
+   */
+  const onReconnect = useCallback(
+    (oldEdge: TreeEdge, connection: Connection) => {
+      if (!connection.source || !connection.target) return
+      if (connection.source === connection.target) return
+      if (
+        edgesRef.current.some(
+          (e) => e.id !== oldEdge.id && e.target === connection.target,
+        )
+      ) {
+        toast('Each node can have only one parent', 'error')
+        return
+      }
+      if (
+        wouldCreateCycle(
+          edgesRef.current,
+          connection.source,
+          connection.target,
+          oldEdge.id,
+        )
+      ) {
+        toast('That connection would create a cycle', 'error')
+        return
+      }
+      const nextEdges = edgesRef.current
+        .filter((e) => e.id !== oldEdge.id)
+        .concat(
+          withCanonicalHandles({
+            id: oldEdge.id,
+            source: connection.source!,
+            target: connection.target!,
+            type: oldEdge.type,
+            data: oldEdge.data,
+          }),
+        )
+      setEdges(nextEdges)
+      commit(nodesRef.current, nextEdges)
+      toast('Reconnected', 'success')
     },
     [commit, toast],
   )
@@ -307,49 +374,29 @@ export function useTreeEditor() {
             ? { x: base.data.style.width + 60, y: 0 }
             : { x: 40, y: -(base.data.style.height + 100) }
       const node = makeNode(
-        { ...partial, style: { ...base.data.style, ...(partial.style ?? {}) } },
+        {
+          ...partial,
+          category: partial.category ?? base.data.category,
+          style: { ...base.data.style, ...(partial.style ?? {}) },
+        },
         { x: base.position.x + offset.x, y: base.position.y + offset.y },
       )
       const nextNodes = [...nodesRef.current, node]
       let nextEdges = [...edgesRef.current]
       if (relation === 'child') {
-        nextEdges.push({
-          id: uid('e'),
-          source: baseId,
-          target: node.id,
-          type: 'smoothstep',
-          data: defaultEdgeStyle(),
-        })
+        nextEdges.push(makeTreeEdge(baseId, node.id))
       } else if (relation === 'sibling') {
         const parentEdge = edgesRef.current.find((e) => e.target === baseId)
         if (parentEdge) {
-          nextEdges.push({
-            id: uid('e'),
-            source: parentEdge.source,
-            target: node.id,
-            type: 'smoothstep',
-            data: defaultEdgeStyle(),
-          })
+          nextEdges.push(makeTreeEdge(parentEdge.source, node.id))
         }
       } else {
         // New parent above base: rewire base's old parents to the new node
         const oldEdges = edgesRef.current.filter((e) => e.target === baseId)
         nextEdges = nextEdges.filter((e) => e.target !== baseId)
-        nextEdges.push({
-          id: uid('e'),
-          source: node.id,
-          target: baseId,
-          type: 'smoothstep',
-          data: defaultEdgeStyle(),
-        })
+        nextEdges.push(makeTreeEdge(node.id, baseId))
         for (const old of oldEdges) {
-          nextEdges.push({
-            id: uid('e'),
-            source: old.source,
-            target: node.id,
-            type: 'smoothstep',
-            data: defaultEdgeStyle(),
-          })
+          nextEdges.push(makeTreeEdge(old.source, node.id))
         }
       }
       setNodes(nextNodes.map((n) => ({ ...n, selected: n.id === node.id })))
@@ -386,7 +433,7 @@ export function useTreeEditor() {
 
   /** Apply a style/shape change to every selected node (bulk edit). */
   const bulkUpdate = useCallback(
-    (style: Partial<NodeStyle>, shape?: NodeShape) => {
+    (style: Partial<NodeStyle>, data?: Partial<NodeData>) => {
       const selectedIds = new Set(
         nodesRef.current.filter((n) => n.selected).map((n) => n.id),
       )
@@ -397,7 +444,7 @@ export function useTreeEditor() {
           ...n,
           data: {
             ...n.data,
-            shape: shape ?? n.data.shape,
+            ...data,
             style: { ...n.data.style, ...style },
           },
         }
@@ -495,13 +542,7 @@ export function useTreeEditor() {
         const childId = idMap.get(item.originalId)
         const parentId = idMap.get(item.parentId)
         if (childId && parentId) {
-          newEdges.push({
-            id: uid('e'),
-            source: parentId,
-            target: childId,
-            type: 'smoothstep',
-            data: defaultEdgeStyle(),
-          })
+          newEdges.push(makeTreeEdge(parentId, childId))
         }
       })
       const nextNodes = [...nodesRef.current, ...newNodes]
@@ -806,6 +847,7 @@ export function useTreeEditor() {
     onNodesChange,
     onEdgesChange,
     onConnect,
+    onReconnect,
     // node operations
     addNodeAt,
     addRelative,

@@ -18,6 +18,8 @@ export type LayoutDirection = 'TB' | 'BT' | 'LR' | 'RL'
 
 export type EdgeStyleType = 'smoothstep' | 'bezier' | 'straight' | 'step'
 
+export type LegendPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+
 /** Visual styling for a single node */
 export interface NodeStyle {
   background: string
@@ -41,6 +43,8 @@ export interface NodeData extends Record<string, unknown> {
   description: string
   icon: string
   imageUrl: string
+  /** Optional semantic category (e.g. "Academic Affairs") used by the legend and grouping */
+  category: string
   shape: NodeShape
   style: NodeStyle
   /** Whether this node's branch is collapsed (children hidden) */
@@ -68,10 +72,21 @@ export type LayoutEdge = Edge<EdgeStyleData>
 export interface CanvasSettings {
   showGrid: boolean
   layoutDirection: LayoutDirection
+  /** Show the auto-detected color/category legend over the canvas */
+  showLegend: boolean
+  legendPosition: LegendPosition
+  /** Active color/category filter; null shows every node */
+  focusGroup: string | null
 }
 
 export interface ThemeMode {
   mode: 'light' | 'dark' | 'system'
+}
+
+/** Manual label override for an auto-detected legend entry */
+export interface LegendConfig {
+  /** Keyed by legend entry id: `${category}|||${color}` */
+  labels: Record<string, string>
 }
 
 /** A ready-made template (nodes + edges laid out as a tree) */
@@ -82,11 +97,13 @@ export interface TreeTemplate {
   build: () => { nodes: TreeNode[]; edges: TreeEdge[] }
 }
 
-/** Full serializable project stored in localStorage / JSON export */
+/** Full serializable project stored in localStorage / .nodetree files */
 export interface Project {
   name: string
   version: 1
   nodes: TreeNode[]
   edges: TreeEdge[]
   settings: CanvasSettings
+  /** Optional manual legend labels; absent on older files */
+  legend?: LegendConfig
 }

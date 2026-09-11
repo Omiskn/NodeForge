@@ -107,7 +107,7 @@ function LeftSidebar({ editor, onClose }: SidebarProps) {
           <Button
             variant="outline"
             size="sm"
-            className="flex-col gap-0.5 !px-1 py-2 text-[10px]"
+            className="flex-col gap-0.5 !px-1 py-2 text-[10px] leading-tight"
             disabled={!selectedNode}
             onClick={() => selectedNode && editor.addRelative(selectedNode.id, 'child')}
           >
@@ -117,7 +117,7 @@ function LeftSidebar({ editor, onClose }: SidebarProps) {
           <Button
             variant="outline"
             size="sm"
-            className="flex-col gap-0.5 !px-1 py-2 text-[10px]"
+            className="flex-col gap-0.5 !px-1 py-2 text-[10px] leading-tight"
             disabled={!selectedNode}
             onClick={() => selectedNode && editor.addRelative(selectedNode.id, 'sibling')}
           >
@@ -127,11 +127,25 @@ function LeftSidebar({ editor, onClose }: SidebarProps) {
         </div>
         {!selectedNode ? (
           <p className="mb-3 text-[10px] text-[var(--muted-foreground)]">
-            Select a node first to add relatives.
+            Select a node to add a relative, or use the button below for a standalone node.
           </p>
         ) : (
           <div className="mb-3" />
         )}
+        <Button
+          variant="outline"
+          className="mb-4 w-full text-xs"
+          onClick={() => {
+            const center = editor.viewportCenter()
+            editor.addNodeAt(
+              { title: 'New Node' },
+              { x: center.x, y: center.y },
+            )
+          }}
+        >
+          <Plus size={14} />
+          Standalone Node
+        </Button>
 
         {/* node shapes */}
         <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">

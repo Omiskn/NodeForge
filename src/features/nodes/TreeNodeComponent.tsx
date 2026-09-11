@@ -189,14 +189,19 @@ function TreeNodeComponent({ id, data, selected }: NodeProps<TreeNode>) {
       className={cn('relative h-full w-full', data.highlightedAt && 'node-highlight')}
       style={{ opacity: style.opacity }}
     >
-      {/* Connection handles on all four sides */}
+      {/*
+        Connection handles on every side. New parent → child edges always use
+        the BOTTOM source / TOP target so connectors flow downward; the other
+        handles stay connectable for custom manual layouts. Dots appear on
+        hover or selection so drag targets are visually clear.
+      */}
       {HANDLES.map((h) => (
         <Handle
           key={`s-${h.id}`}
           id={`s-${h.id}`}
           type="source"
           position={h.position}
-          className="!size-1.5 !border-0 !bg-transparent"
+          className="tree-handle"
         />
       ))}
       {HANDLES.map((h) => (
@@ -205,7 +210,7 @@ function TreeNodeComponent({ id, data, selected }: NodeProps<TreeNode>) {
           id={`t-${h.id}`}
           type="target"
           position={h.position}
-          className="!size-1.5 !border-0 !bg-transparent"
+          className="tree-handle"
         />
       ))}
 

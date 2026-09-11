@@ -135,7 +135,7 @@ function MultiSelectSection({ editor, count }: { editor: TreeEditor; count: numb
               value=""
               onChange={(e) => {
                 const shape = e.target.value as NodeShape
-                editor.bulkUpdate(shapePresets[shape], shape)
+                editor.bulkUpdate(shapePresets[shape], { shape })
               }}
             >
               <option value="" disabled>

@@ -150,6 +150,8 @@ function TreeCanvas({ editor }: { editor: TreeEditor }) {
         onNodesChange={editor.onNodesChange}
         onEdgesChange={editor.onEdgesChange}
         onConnect={editor.onConnect}
+        onReconnect={editor.onReconnect}
+        reconnectRadius={10}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onNodeContextMenu={onNodeContextMenu}

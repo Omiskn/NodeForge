@@ -1,4 +1,4 @@
-import type { EdgeStyleData } from '@/types'
+import type { CanvasSettings, EdgeStyleData } from '@/types'
 
 /** Default clean org-chart connector style. */
 export function defaultEdgeStyle(): EdgeStyleData {
@@ -8,6 +8,17 @@ export function defaultEdgeStyle(): EdgeStyleData {
     type: 'smoothstep',
     animated: false,
     arrow: false,
+  }
+}
+
+/** Default canvas settings (also fills in older saved projects). */
+export function defaultCanvasSettings(): CanvasSettings {
+  return {
+    showGrid: true,
+    layoutDirection: 'TB',
+    showLegend: false,
+    legendPosition: 'bottom-right',
+    focusGroup: null,
   }
 }
 
