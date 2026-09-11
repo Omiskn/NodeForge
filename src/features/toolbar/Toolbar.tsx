@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/DropdownMenu'
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog'
 import { STORAGE_KEY, type TreeEditor } from '@/hooks/useTreeEditor'
-import { serializeProject, parseImportedProject } from '@/lib/project'
+import { serializeProject, parseImportedProject, saveProject, loadProject } from '@/lib/project'
 import { exportImage } from '@/lib/exportImage'
 import { createDemoTree } from '@/data/templates'
 import type { LayoutDirection } from '@/types'
@@ -60,7 +60,26 @@ function Toolbar({ editor, onOpenSidebar, onOpenPanel }: ToolbarProps) {
   const [search, setSearch] = useState('')
 
   /* ---------------- actions ---------------- */
-  function save() {
+  async function loadProjectFile() {
+    try {
+      const ok = await loadProject((project) => {
+        if (!project) {
+          editor.toast("Could not load that file", "error")
+          return
+        }
+        editor.replaceProject(project)
+        editor.toast("Project loaded", "success")
+      })
+      if (!ok) {
+        // Fallback: the hidden file input will be used by the Import Project button.
+        editor.toast("Open a .nodetree file via Import Project", "info")
+      }
+    } catch {
+      editor.toast("Open a .nodetree file via Import Project", "info")
+    }
+  }
+
+  async function save() {
     const project = {
       name: editor.name,
       version: 1 as const,
@@ -68,8 +87,19 @@ function Toolbar({ editor, onOpenSidebar, onOpenPanel }: ToolbarProps) {
       edges: editor.edges,
       settings: editor.settings,
     }
+    // Keep the existing autosave/recovery in localStorage.
     localStorage.setItem(STORAGE_KEY, serializeProject(project))
-    editor.toast('Project saved', 'success')
+    // Also persist a real .nodetree file when the browser supports it.
+    try {
+      const ok = await saveProject(project, editor.name)
+      if (ok) {
+        editor.toast("Project saved", "success")
+      } else {
+        editor.toast("Project autosaved in browser", "info")
+      }
+    } catch {
+      editor.toast("Project autosaved in browser", "info")
+    }
   }
 
   async function exportAs(format: 'json' | 'png' | 'svg') {
@@ -233,7 +263,7 @@ function Toolbar({ editor, onOpenSidebar, onOpenPanel }: ToolbarProps) {
           <Maximize size={16} />
         </IconButton>
 
-        <IconButton label="Save to browser" onClick={save}>
+        <IconButton label="Save Project" onClick={save}>
           <Save size={16} />
         </IconButton>
 
@@ -260,7 +290,11 @@ function Toolbar({ editor, onOpenSidebar, onOpenPanel }: ToolbarProps) {
           )}
         </DropdownMenu>
 
-        <IconButton label="Import JSON" onClick={() => fileInputRef.current?.click()}>
+        <IconButton label="Load Project" onClick={loadProjectFile}>
+          <FileJson size={16} />
+        </IconButton>
+
+        <IconButton label="Import Project" onClick={() => fileInputRef.current?.click()}>
           <Upload size={16} />
         </IconButton>
 
@@ -349,7 +383,7 @@ function Toolbar({ editor, onOpenSidebar, onOpenPanel }: ToolbarProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="application/json,.json"
+        accept="application/x-nodetree,application/json,.nodetree,.json"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0]
