@@ -6,7 +6,7 @@ Handoff file for AI agents. Read `AGENTS.md` first for architecture, conventions
 
 ### Project Status
 
-**Feature-complete v0.1 + Feature 1 complete.** NodeTree builds cleanly (`npx tsc -b` 0 errors, `vite build` succeeds in ~1.0s), `main` is synced with `origin/main`, and the working tree is clean except for one pre-existing unrelated modified file (`src/data/templates.ts` — untouched by this work). Feature 1 (connection direction) is committed as `53ae57b` and pushed.
+**Feature-complete v0.1 + Features 1–2 complete.** NodeTree builds cleanly (`npx tsc -b` 0 errors, `vite build` succeeds in ~1.6s), `main` is synced with `origin/main`, and the working tree is clean. Feature 1 (connection direction) is `53ae57b`; Feature 2 (relationship picker) is `07d6c9d`; templates.ts canonical-handle refinement is `ffc258e`. All pushed.
 
 ### Completed
 
@@ -19,11 +19,11 @@ Handoff file for AI agents. Read `AGENTS.md` first for architecture, conventions
 - Import/Export: JSON (normalized), PNG/SVG (html-to-image); light/dark/system theme via CSS variables
 - Keyboard shortcuts: Del/Backspace, Ctrl+Z/Shift+Z/Y, Ctrl+C/V/D/A, Escape
 - **Feature 1 — Fix connection direction:** parent→child edges now always use BOTTOM source handle → TOP target handle. New `src/lib/edgeHandles.ts` provides canonical handles + cycle detection. `onConnect` and new `onReconnect` are cycle-aware and reject self-loops. Handles styled as visible emerald dots (`.tree-handle`) on hover/selection.
+- **Feature 2 — Relationship picker for Add Node:** the LeftSidebar "Hierarchy" section now lets the user choose how a new node relates to the selected node: Add Child, Add Sibling, Add Parent, or Add Unlinked (no connection). A relationship-picker control (4 buttons) replaces the old 3 fixed buttons, and the add button is disabled until a relationship is chosen. "Standalone Node" still adds at viewport center. Re-connect-by-drag already wired in TreeCanvas (`onReconnect`).
 
 ### In Progress
 
-Nothing — Feature 1 done and pushed. Remaining features from the task list (2–7) still pending:
-2. Improve Add Node + node relationships (standalone node button added; full Add Parent/Child/Sibling/Unconnected UI in LeftSidebar pending)
+Nothing — Features 1–2 done and pushed. Remaining features from the task list (3–7) still pending:
 3. Real `.nodetree` project file save/load (File System Access API + fallback download)
 4. Print / PDF (print-specific CSS, hide editor UI)
 5. Legend system (auto-detected color/category legend, position, editable labels, canvas/image/print)
@@ -32,12 +32,11 @@ Nothing — Feature 1 done and pushed. Remaining features from the task list (2�
 
 ### Next Steps
 
-1. Finish Feature 2: add Add Parent/Add Child/Add Sibling/Unconnected node choices in the LeftSidebar when a node is selected; confirm standalone node button works; reconnect-by-drag already wired in TreeCanvas (`onReconnect`).
-2. Feature 3: implement `.nodetree` save (File System Access API with download fallback) and load (file picker → `parseImportedProject`). Keep localStorage as autosave recovery only.
-3. Feature 4: add print/PDF path — print-specific CSS that hides toolbar, sidebars, panel, grid, selection outlines; landscape `@page`; optionally use html-to-image for a PDF-png fallback.
-4. Feature 5: legend component rendered as an overlay in TreeCanvas (respects `settings.showLegend` + `settings.legendPosition`); auto-detect categories/colors from nodes; editable label overrides stored in `project.legend.labels`; include legend in PNG/SVG/print snapshots.
-5. Feature 6: color/category grouping panel — highlight group, filter to a group, "show all"; use `NodeData.category` + color; do not merge/reposition nodes.
-6. After each feature: `npx tsc -b` (must be 0 errors), `npx vite build`, update CHANGELOG_AI.md, inspect `git diff`, commit with focused message, push to `origin/main`.
+1. Feature 3: implement `.nodetree` save (File System Access API with download fallback) and load (file picker → `parseImportedProject`). Keep localStorage as autosave recovery only.
+2. Feature 4: add print/PDF path — print-specific CSS that hides toolbar, sidebars, panel, grid, selection outlines; landscape `@page`; optionally use html-to-image for a PDF-png fallback.
+3. Feature 5: legend component rendered as an overlay in TreeCanvas (respects `settings.showLegend` + `settings.legendPosition`); auto-detect categories/colors from nodes; editable label overrides stored in `project.legend.labels`; include legend in PNG/SVG/print snapshots.
+4. Feature 6: color/category grouping panel — highlight group, filter to a group, "show all"; use `NodeData.category` + color; do not merge/reposition nodes.
+5. After each feature: `npx tsc -b` (must be 0 errors), `npx vite build`, update CHANGELOG_AI.md, inspect `git diff`, commit with focused message, push to `origin/main`.
 
 ### Known Issues
 
@@ -71,15 +70,18 @@ Nothing — Feature 1 done and pushed. Remaining features from the task list (2�
 - `src/data/edgeStyles.ts` — added `defaultCanvasSettings()` factory.
 - `src/lib/project.ts` — uses `defaultCanvasSettings()` via local def; normalizes `legend` via `normalizeLegend()`.
 - `src/features/properties/PropertiesPanel.tsx` — `bulkUpdate` call fixed to pass `{ shape }` object.
-- `src/features/sidebar/LeftSidebar.tsx` — added "Standalone Node" button (adds node at viewport center); layout text improved.
-- Commit `53ae57b` — "feat: fix node connection direction (parent-bottom to child-top) with cycle-aware connect/reconnect".
+- `src/features/sidebar/LeftSidebar.tsx` — Feature 2: relationship picker (Child/Sibling/Parent/Unlinked) + `addRelativeToSelected()`; Standalone Node button unchanged; `ChevronsUp` added.
+- `src/data/templates.ts` — `refine: use canonical handles for template-generated edges` (`ffc258e`): template edges built with `withCanonicalHandles()` so they follow the same bottom→top model as runtime connections.
+- Commit `53ae57b` — "feat: fix node connection direction (parent-bottom to child-top) with cycle-aware connect/reconnect"
+- Commit `07d6c9d` — "feat: add relationship picker for Add Node (Child/Sibling/Parent/Unlinked) in left sidebar"
+- Commit `ffc258e` — "refine: use canonical handles for template-generated edges"
 
 ### Git Checkpoint
 
-- Branch `main`, clean working tree (one pre-existing unrelated modified file: `src/data/templates.ts` — untouched).
-- Latest: `53ae57b` — "feat: fix node connection direction (parent-bottom to child-top) with cycle-aware connect/reconnect"
-- Before that: `d4cd2fc` — AI handoff checkpoint; `721f9be` — AGENTS.md + CHANGELOG_AI.md; `4de2f52` — context menu fix; `51ed50c` — full NodeTree editor; `cdb1cf8` — initial Vite template.
+- Branch `main`, clean working tree.
+- Latest: `ffc258e` — "refine: use canonical handles for template-generated edges"
+- Before that: `07d6c9d` — relationship picker; `c130624` — Feature 1 docs update; `53ae57b` — connection direction fix; `d4cd2fc` — AI handoff checkpoint; `721f9be` — AGENTS.md + CHANGELOG_AI.md; `4de2f52` — context menu fix; `51ed50c` — full NodeTree editor; `cdb1cf8` — initial Vite template.
 
 ### Do Not Change
 
-Without a strong, documented reason, do not modify: `useTreeEditor`'s return API and its persistence layer; `computeVisible()` dimension syncing; the `deleteKeyCode={null}` + global keyboard-delete design; `src/index.css` theme variables; the `Project` JSON schema; tsconfig strict flags; the one-parent-per-child invariant; the canonical bottom→top connection model now enforced by `edgeHandles.ts`.
+Without a strong, documented reason, do not modify: `useTreeEditor`'s return API and its persistence layer; `computeVisible()` dimension syncing; the `deleteKeyCode={null}` + global keyboard-delete design; `src/index.css` theme variables; the `Project` JSON schema; tsconfig strict flags; the one-parent-per-child invariant; the canonical bottom→top connection model now enforced by `edgeHandles.ts`; the relationship-picker pattern in `LeftSidebar.tsx` (Child/Sibling/Parent/Unlinked) without a clear reason.
