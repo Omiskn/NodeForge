@@ -1,7 +1,8 @@
 import { autoLayout } from '@/lib/layout'
 import { uid } from '@/lib/utils'
-import { defaultEdgeStyle } from '@/data/edgeStyles'
 import { makeNodeData } from '@/data/nodeStyles'
+import { withCanonicalHandles } from '@/lib/edgeHandles'
+import { defaultEdgeStyle } from '@/data/edgeStyles'
 import type { NodeShape, TreeNode, TreeEdge, TreeTemplate, NodeStyle, LayoutDirection } from '@/types'
 
 /** Declarative spec used to define templates compactly */
@@ -44,13 +45,15 @@ export function buildTreeFromSpec(root: NodeSpec, direction: LayoutDirection = '
       }),
     })
     if (parentId) {
-      edges.push({
-        id: uid('e'),
-        source: parentId,
-        target: id,
-        type: 'smoothstep',
-        data: defaultEdgeStyle(),
-      })
+      edges.push(
+        withCanonicalHandles({
+          id: uid('e'),
+          source: parentId,
+          target: id,
+          type: 'smoothstep',
+          data: defaultEdgeStyle(),
+        }),
+      )
     }
     spec.children?.forEach((child) => walk(child, id))
   }
