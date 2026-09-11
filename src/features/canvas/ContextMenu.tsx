@@ -82,40 +82,61 @@ function ContextMenu({
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const onDown = (e: MouseEvent) => {
+    // Close on any press outside the menu. pointerdown covers mouse, touch
+    // and pen, and fires before the contextmenu event — so right-clicking
+    // elsewhere first closes this menu (the canvas handler can then open a
+    // fresh one at the new position).
+    const onPointerDown = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    const onContextMenu = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose()
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
-    document.addEventListener('mousedown', onDown)
+    document.addEventListener('pointerdown', onPointerDown, true)
+    document.addEventListener('contextmenu', onContextMenu, true)
     document.addEventListener('keydown', onKey)
     return () => {
-      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('contextmenu', onContextMenu, true)
       document.removeEventListener('keydown', onKey)
     }
   }, [onClose])
+
+  /** Run a menu action, then close the menu. */
+  const run = (action: () => void) => () => {
+    action()
+    onClose()
+  }
+
+  // Keep the menu inside the visible viewport
+  const menuHeight = state.kind === 'node' ? 340 : 200
+  const left = Math.min(state.x, window.innerWidth - 220)
+  const top = Math.min(state.y, Math.max(8, window.innerHeight - menuHeight))
 
   if (state.kind === 'node' && state.nodeId) {
     const nodeId = state.nodeId
     return (
       <div
         ref={ref}
-        style={{ left: state.x, top: state.y }}
+        style={{ left, top }}
+        onContextMenu={(e) => e.preventDefault()}
         className={cn(
           'fixed z-[90] w-52 rounded-xl border border-[var(--border)] bg-[var(--popover)] p-1',
           'shadow-[var(--shadow-lg-soft)] animate-pop',
         )}
       >
-        <MenuRow icon={Pencil} label="Edit" onClick={() => actions.onEdit(nodeId)} />
-        <MenuRow icon={Copy} label="Duplicate" onClick={() => actions.onDuplicate()} />
+        <MenuRow icon={Pencil} label="Edit" onClick={run(() => actions.onEdit(nodeId))} />
+        <MenuRow icon={Copy} label="Duplicate" onClick={run(() => actions.onDuplicate())} />
         <MenuSeparator />
-        <MenuRow icon={Plus} label="Add Child" onClick={() => actions.onAddChild(nodeId)} />
-        <MenuRow icon={ChevronsRight} label="Add Sibling" onClick={() => actions.onAddSibling(nodeId)} />
-        <MenuRow icon={ChevronsLeft} label="Add Parent" onClick={() => actions.onAddParent(nodeId)} />
+        <MenuRow icon={Plus} label="Add Child" onClick={run(() => actions.onAddChild(nodeId))} />
+        <MenuRow icon={ChevronsRight} label="Add Sibling" onClick={run(() => actions.onAddSibling(nodeId))} />
+        <MenuRow icon={ChevronsLeft} label="Add Parent" onClick={run(() => actions.onAddParent(nodeId))} />
         <MenuSeparator />
-        <MenuRow icon={Clipboard} label="Copy" onClick={() => actions.onCopy()} />
-        <MenuRow icon={Trash2} label="Delete" danger onClick={() => actions.onDelete(nodeId)} />
+        <MenuRow icon={Clipboard} label="Copy" onClick={run(() => actions.onCopy())} />
+        <MenuRow icon={Trash2} label="Delete" danger onClick={run(() => actions.onDelete(nodeId))} />
         <MenuSeparator />
         <div className="flex items-center gap-1.5 px-2.5 py-1.5">
           <Palette size={15} className="shrink-0 opacity-70 text-[var(--popover-foreground)]" />
@@ -127,7 +148,7 @@ function ContextMenu({
                 aria-label={`Set color ${color}`}
                 className="size-4 rounded-full border border-[var(--border)] transition hover:scale-110"
                 style={{ background: color }}
-                onClick={() => actions.onChangeColor(nodeId, color)}
+                onClick={run(() => actions.onChangeColor(nodeId, color))}
               />
             ))}
           </div>
@@ -141,7 +162,7 @@ function ContextMenu({
                 type="button"
                 title={option.label}
                 className="rounded-md border border-[var(--border)] px-1.5 py-0.5 text-[10px] text-[var(--popover-foreground)] transition hover:bg-[var(--secondary)]"
-                onClick={() => actions.onChangeShape(nodeId, option.value)}
+                onClick={run(() => actions.onChangeShape(nodeId, option.value))}
               >
                 {option.label}
               </button>
@@ -155,18 +176,19 @@ function ContextMenu({
   return (
     <div
       ref={ref}
-      style={{ left: state.x, top: state.y }}
+      style={{ left, top }}
+      onContextMenu={(e) => e.preventDefault()}
       className={cn(
         'fixed z-[90] w-52 rounded-xl border border-[var(--border)] bg-[var(--popover)] p-1',
         'shadow-[var(--shadow-lg-soft)] animate-pop',
       )}
     >
-      <MenuRow icon={Plus} label="Add Node" onClick={() => actions.onAddNode(flowPosition)} />
-      <MenuRow icon={Clipboard} label="Paste" onClick={() => actions.onPaste(flowPosition)} />
-      <MenuRow icon={Squirrel} label="Select All" onClick={() => actions.onSelectAll()} />
+      <MenuRow icon={Plus} label="Add Node" onClick={run(() => actions.onAddNode(flowPosition))} />
+      <MenuRow icon={Clipboard} label="Paste" onClick={run(() => actions.onPaste(flowPosition))} />
+      <MenuRow icon={Squirrel} label="Select All" onClick={run(() => actions.onSelectAll())} />
       <MenuSeparator />
-      <MenuRow icon={Maximize} label="Fit View" onClick={() => actions.onFitView()} />
-      <MenuRow icon={Layout} label="Auto Layout" onClick={() => actions.onAutoLayout()} />
+      <MenuRow icon={Maximize} label="Fit View" onClick={run(() => actions.onFitView())} />
+      <MenuRow icon={Layout} label="Auto Layout" onClick={run(() => actions.onAutoLayout())} />
     </div>
   )
 }
