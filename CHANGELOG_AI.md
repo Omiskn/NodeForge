@@ -57,8 +57,8 @@ Nothing — no task is currently open. Handoff system (AGENTS.md + this file) ju
 ### Git Checkpoint
 
 - Branch `main`, clean tree, synced with `origin/main`.
-- Latest: `4de2f52` — "Fix context menu: close after choosing an action and on any outside click"
-- Before that: `51ed50c` — full NodeTree editor build; `cdb1cf8` — initial Vite template commit.
+- Latest: `721f9be` — "docs: add persistent AI handoff/context system (AGENTS.md + CHANGELOG_AI.md)"
+- Before that: `4de2f52` — context-menu fix; `51ed50c` — full NodeTree editor build; `cdb1cf8` — initial Vite template commit.
 
 ### Do Not Change
 
