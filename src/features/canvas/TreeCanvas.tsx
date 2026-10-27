@@ -48,6 +48,18 @@ function TreeCanvas({ editor }: { editor: TreeEditor }) {
   const rf = useReactFlow()
   const [menu, setMenu] = useState<ContextMenuState | null>(null)
   const [flowPos, setFlowPos] = useState({ x: 0, y: 0 })
+  const [isPrinting, setIsPrinting] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia('print')
+    const update = () => setIsPrinting(media.matches)
+    window.addEventListener('beforeprint', () => setIsPrinting(true))
+    window.addEventListener('afterprint', () => setIsPrinting(false))
+    media.addEventListener?.('change', update)
+    return () => {
+      media.removeEventListener?.('change', update)
+    }
+  }, [])
 
   const nodes = editor.visibleDoc.visibleNodes
   const edges = useMemo(
@@ -209,31 +221,33 @@ function TreeCanvas({ editor }: { editor: TreeEditor }) {
       </ReactFlow>
 
       {/* Print-only overlay: clean diagram (no chrome) for print/PDF. */}
-      <div className="print-only print-diagram absolute inset-0 flex items-center justify-center">
-        {isEmpty ? (
-          <div className="rounded-2xl border border-dashed border-black/20 bg-white px-10 py-8 text-center">
-            <p className="text-sm font-medium">
-              Your canvas is empty
-            </p>
-            <p className="mt-1 text-xs text-black/50">
-              Drag a node shape from the sidebar or pick a ready-made template
-              to get started.
-            </p>
-          </div>
-        ) : (
-          <ReactFlow
-            nodes={printNodes}
-            edges={printEdges}
-            nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.05 }}
-            deleteKeyCode={null}
-            multiSelectionKeyCode={null}
-            selectionKeyCode={null}
-            className="!bg-white !p-6"
-          />
-        )}
-      </div>
+      {isPrinting ? (
+        <div className="print-only print-diagram absolute inset-0 flex items-center justify-center">
+          {isEmpty ? (
+            <div className="rounded-2xl border border-dashed border-black/20 bg-white px-10 py-8 text-center">
+              <p className="text-sm font-medium">
+                Your canvas is empty
+              </p>
+              <p className="mt-1 text-xs text-black/50">
+                Drag a node shape from the sidebar or pick a ready-made template
+                to get started.
+              </p>
+            </div>
+          ) : (
+            <ReactFlow
+              nodes={printNodes}
+              edges={printEdges}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.05 }}
+              deleteKeyCode={null}
+              multiSelectionKeyCode={null}
+              selectionKeyCode={null}
+              className="!bg-white !p-6"
+            />
+          )}
+        </div>
+      ) : null}
 
       {/* Empty state */}
       {isEmpty ? (
