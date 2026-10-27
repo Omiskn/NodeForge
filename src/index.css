@@ -171,6 +171,10 @@ body {
   }
 }
 
+.print-only {
+  display: none;
+}
+
 /* Print / PDF: hide editor chrome, show only the diagram + legend. */
 @media print {
   @page {
